@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 # import mpmath as mp
 
-POPULATION_SIZE = 100
+POPULATION_SIZE = 200
 GENERATIONS = 100
 POPULATION_SAMPLE = 2
 MUTATION_RANGE = 5
-BYTE_SIZE = 8
+BYTE_LEN = 8
 CHROMOSOME_LEN = 12
 
 #             m1, m2, m3, d1, d2, d3, p1, p2, p3, q1, q2, q3
@@ -39,9 +39,9 @@ def create_first_gen():
     for _ in range(POPULATION_SIZE):
         chromosome = []
         for _ in range(CHROMOSOME_LEN):  # m, d, p, q * 3 == 12 numbers
-            gen = [random.randint(0, 1) for _ in range(BYTE_SIZE)]
+            gen = [random.randint(0, 1) for _ in range(BYTE_LEN)]
             while get_integer(gen) == 0:
-                gen = [random.randint(0, 1) for _ in range(BYTE_SIZE)]
+                gen = [random.randint(0, 1) for _ in range(BYTE_LEN)]
             chromosome.append(gen)
             # print(gen)
         first_gen.append(chromosome)
@@ -53,11 +53,12 @@ def get_weight(chrom):
     """Returns the weight if given chromosome."""
     # print("Chromosome: ", chrom)
     biggest_number = 0
-    for i, number in enumerate(chrom):
-        # print("i: ", i, " number: ", number)
-        if get_integer(chrom[i]) > biggest_number:
-            biggest_number = get_integer(chrom[i])  # get_integer(number)
-    weight = 255/biggest_number  # gets the integer value of the division
+    for _, gen in enumerate(chrom):
+        # print("i: ", _, "gen: ", gen)
+        if get_integer(gen) > biggest_number:
+            biggest_number = get_integer(gen)  # get_integer(number)
+    """Probar con la división de fracciones '/' o con numero fijo"""
+    weight = 255//biggest_number  # gets the integer value of the division
     # print("Peso: ", weight)
     return weight
 
@@ -102,6 +103,7 @@ def get_aptitude(chrom):
     # print("Peso: ", weight)
     decoded_values = []
     for _, number in enumerate(chrom):
+        """Probar con la división redondeada '//'"""
         decoded_values.append(get_integer(number)/weight)
     # print("Decodificado: ", decoded_values)
     curve = get_takagi_curve(decoded_values)
@@ -179,8 +181,8 @@ def bit_operation(part_1, part_2, operation_type):
 
 def gen_cut_mask(cut_index, son_part, daughter_part):
     """Gen mask cut method."""
-    low_mask = bin_array((2 ** cut_index)-1, BYTE_SIZE)
-    high_mask = bin_array(((2 ** BYTE_SIZE)-1)-((2 ** cut_index)-1), BYTE_SIZE)
+    low_mask = bin_array((2 ** cut_index)-1, BYTE_LEN)
+    high_mask = bin_array(((2 ** BYTE_LEN)-1)-((2 ** cut_index)-1), BYTE_LEN)
     # print('cut_index:', cut_index)
     # print('high_mask:', high_mask,
     #      ' low_mask:', low_mask)
@@ -203,9 +205,9 @@ def mutate_if_zero(chrom):
     result = []
     # Inverts a single bit in a gen
     if random.randint(0, 100) < MUTATION_RANGE:
-        mutate = random.randint(0, 55)
-        mutate_index = mutate // BYTE_SIZE  # outer chromosome mutate index
-        mutate_offset = mutate % BYTE_SIZE  # Inner gen mutate index
+        mutate = random.randint(0, 95)
+        mutate_index = mutate // BYTE_LEN  # outer chromosome mutate index
+        mutate_offset = mutate % BYTE_LEN  # Inner gen mutate index
         # print('mutate: ', mutate, 'mutate_index:',
         #      mutate_index, 'mutate_offset:', mutate_offset)
 
@@ -216,7 +218,7 @@ def mutate_if_zero(chrom):
     for _, gen in enumerate(chrom):
         while get_integer(gen) == 0:
             # print("Int: ", get_integer(gen), " gen: ", gen)
-            gen = [random.randint(0, 1) for _ in range(BYTE_SIZE)]
+            gen = [random.randint(0, 1) for _ in range(BYTE_LEN)]
             # print(gen)
         result.append(gen)
 
@@ -230,9 +232,9 @@ def reproduction(father, mother):
     daughter = mother.copy()
 
     cut = random.randint(1, 95)  # Indicates where to slice the chromosome
-    cut_index = cut // BYTE_SIZE  # outer chromosome cut index
-    cut_index_l = math.ceil(cut / BYTE_SIZE)  # outer chromosome cut index
-    cut_offset = cut % BYTE_SIZE  # Inner gen cut index
+    cut_index = cut // BYTE_LEN  # outer chromosome cut index
+    cut_index_l = math.ceil(cut / BYTE_LEN)  # outer chromosome cut index
+    cut_offset = cut % BYTE_LEN  # Inner gen cut index
     # print('cut: ', cut, 'cut_index:', cut_index, ' cut_offset:', cut_offset)
     # print('father:', father, ' mother:', mother)
 
@@ -251,8 +253,9 @@ def reproduction(father, mother):
         XX.append(gen_2)
     # print('X:', X, ' Y:', Y)
     # print('XX:', XX, ' YY:', YY)
-    son = mutate_if_zero(X + YY)
-    daughter = mutate_if_zero(XX + Y)
+    """Deshabilite la mutación para ver si se ajusta mejor o peor"""
+    son = X + YY  # mutate_if_zero(X + YY)
+    daughter = XX + Y  # mutate_if_zero(XX + Y)
 
     # print('son:', son)
     # print('daughter:', daughter)
@@ -286,8 +289,9 @@ def show_graph(curve, aptitudes):  # route, distances
     plt.xlabel("Generation")
     plt.ylabel("Distance")
     plt.title("Individual Score per Generation")
-    # distances[len(distances)]
-    # plt.suptitle("Route distance: " + str(distances[len(distances)-1]))
+
+    plt.suptitle("Current Aptitude: " + str(aptitudes[len(aptitudes)-1]))
+
     plt.subplots_adjust(left=0.1,
                         bottom=0.1,
                         right=0.9,
@@ -295,7 +299,7 @@ def show_graph(curve, aptitudes):  # route, distances
                         wspace=0.4,
                         hspace=0.4)
     plt.show(block=False)
-    plt.pause(0.1)
+    plt.pause(0.01)
     plt.clf()
 
 
